@@ -1,0 +1,4 @@
+bcrypt
+flask
+markupsafe
+mysql-connector-python

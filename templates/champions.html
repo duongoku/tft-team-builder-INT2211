@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Champions</title>
+        <link rel="stylesheet" href="/static/css/board.css">
+        <link rel="stylesheet" href="/static/css/global.css">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+        <style>
+            .item-block {
+                height: 32px;
+                width: 32px;
+            }
+        </style>
+    </head>
+    <body class="body">
+        <h3>Champion list</h3>
+        <form action="/">
+            <button type="submit">To Index Page</button>
+        </form>
+        <ul>
+        {% for champion in champion_details %}
+            <li>
+                <div>
+                    <img class="item-block" src="/static/image/champion/{{ champion['Champion_ID'] }}.png">
+                    <b>{{ champion['Name'] }}</b>
+                </div>
+                <div>Skill Description: {% autoescape false %}{{ champion['Skill_Description'].replace('\n','<br>') }}{% endautoescape %}</div>
+            </li>
+            <br>
+        {% endfor %}
+        </ul>
+    </body>
+</html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Register</title>
+        <link rel="stylesheet" href="/static/css/global.css">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    </head>
+    <body class="body">
+        <h3>Register Page</h3>
+        <form action="/register" method="post">
+            <label for="username">Username:</label><br>
+            <input type="text" id="username" name="username" value="username"><br>
+            <label for="password">Password:</label><br>
+            <input type="password" id="password" name="password" value="password"><br><br>
+            <input type="submit" value="Register">
+        </form>
+    </body>
+</html>

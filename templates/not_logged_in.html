@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Champions</title>
+        <link rel="stylesheet" href="/static/css/global.css">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    </head>
+    <body class="body">
+        <h3>You are not logged in. Please log in and try again.</h3>
+        <form action="/login">
+            <button type="submit">Click here to login</button>
+        </form>
+    </body>
+</html>

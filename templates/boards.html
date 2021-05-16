@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Board list</title>
+        <link rel="stylesheet" href="/static/css/board.css">
+        <link rel="stylesheet" href="/static/css/global.css">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+        <style>
+            .grid-container {
+                display: inline-grid;
+                grid-row-gap: 20px;
+                grid-template-columns: auto;
+            }
+            .grid-item {
+                border: 3px solid rgb(23, 49, 58);
+                padding: 5px;
+            }
+            .square-inner {
+                display: inline-block;
+                text-align: center;
+            }
+            .champion-block {
+                vertical-align: middle;
+            }
+            .board-button {
+                height: 100%;
+                width: 32px;
+            }
+            .board-form {
+                display: inline-block;
+                height: 100%;
+                width: 32px;
+                margin-right: 10px;
+                vertical-align: top;
+            }
+        </style>
+    </head>
+    <h3>Board list</h3>
+    <body class="body">
+        <h1></h1>
+        <div>
+        <form action="/newboard">
+            <button type="submit">Create new board</button>
+        </form>
+        <form action="/">
+            <button type="submit">Go to index page</button>
+        </form>
+        </div>
+        <div class="grid-container">
+            {% for board in boards %}
+            <div class="grid-item">
+                <form class="board-form" action="/board/{{ board }}">
+                    <button class="board-button" type="submit">{{ board }}</button>
+                </form>
+                {% for champion in boards[board] %}
+                <div class="square-inner">
+                    <img class="champion-block" src="/static/image/champion/{{ champion }}.png">
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </body>
+</html>

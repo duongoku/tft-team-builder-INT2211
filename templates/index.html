@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Index Page</title>
+        <link rel="stylesheet" href="/static/css/global.css">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    </head>
+    <body class="body">
+        {% if username %}
+            <h2>Logged in as {{ username }}!</h2>
+            <form action="/logout">
+                <button type="submit">Click here to logout</button>
+            </form>
+            <form action="/boards">
+                <button type="submit">Click here to go to board your board list</button>
+            </form>
+        {% else %}
+            <h2>You are not logged in!</h2>
+            <form action="/login">
+                <button type="submit">Click here to login</button>
+            </form>
+            <form action="/register">
+                <button type="submit">Click here to register</button>
+            </form>
+        {% endif %}
+        <form action="/champions">
+            <button type="submit">Click here to see champion list</button>
+        </form>
+        <form action="/items">
+            <button type="submit">Click here to see item list</button>
+        </form>
+    </body>
+</html>

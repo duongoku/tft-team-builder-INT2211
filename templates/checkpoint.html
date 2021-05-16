@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Checkpoint</title>
+        <link rel="stylesheet" href="/static/css/global.css">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    </head>
+    <body class="body">
+        <h3>Login Checkpoint</h3>
+        {% if login %}
+        <h3>You're good to go!</h3>
+        {% else %}
+        <h3>Something's wrong!</h3>
+        {% endif %}
+        <h4>Redirecting . . .</h4>
+        <script>
+            async function redirect() {
+                await new Promise(r => setTimeout(r, 2000));
+                location.replace("/");
+            }
+            redirect();
+        </script>
+    </body>
+</html>

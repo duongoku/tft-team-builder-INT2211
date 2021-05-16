@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Board Page</title>
+        <link rel="stylesheet" href="/static/css/board.css">
+        <link rel="stylesheet" href="/static/css/global.css">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    </head>
+    <body class="body">
+        <!-- <h1>Board Details</h1> -->
+        <div class="board-grid" id="div-board-grid">
+        </div>
+        <div class="functionality">
+        <img class="trashbin" src="/static/image/miscellaneous/bin.png" ondragover="allowDrop(event)" ondrop="drop(event)">
+        <button class="button" onClick="save_to_board()" type="submit">Save</button>
+        <form action="/">
+            <button type="submit">Index Page</button>
+        </form>
+        </div>
+        <div class="item-grid" id="div-item-grid">
+        </div>
+        <br>
+        <div class="champion-grid" id="div-champion-grid">
+        </div>
+        <script>
+            //Champions and Items Details
+            var champion_details = {% autoescape false %}{{js_champion_details}}{% endautoescape %};
+            var item_details = {% autoescape false %}{{js_item_details}}{% endautoescape %};
+
+            console.log(champion_details);
+            console.log(item_details);
+
+            //Board data
+            var board = {% autoescape false %}{{js_board_details}}{% endautoescape %};
+            var board_id = {{board_id}};
+
+            console.log(board[27])
+
+            //Champions on board
+            var board_img = Array(28).fill(null);
+            //Items on board, 84 = 28*3
+            var board_item_img = Array(84).fill(null);
+            //All champions
+            var champion_img = Array(57).fill(null);
+            //All Items
+            var item_img = Array(108).fill(null);
+            //Tooltip
+            var tooltip = document.createElement("div");
+            tooltip.className = "tooltip";
+
+            function submit_board() {
+                let submit_data = new URLSearchParams();
+                submit_data.append("board-data", JSON.stringify(board));
+                fetch("/board/" + board_id, {
+                    method: 'post',
+                    body: submit_data
+                })
+                .then(function (response) {
+                    return response.text();
+                })
+                .then(function (text) {
+                    if(board_id == 9999999999) {
+                        location.replace("/board/" + text.split(" ")[0]);
+                    }
+                    console.log(text);
+                })
+                .catch(function (error) {
+                    console.log(error)
+                });
+            }
+
+            //Get ID from src
+            function getId(src) {
+                return src.split('/').pop().split('.')[0];
+            }
+
+            function save_to_board() {
+                for(let i=0; i<board_img.length; i++) {
+                    let champion_id, items_ids;
+                    if(board_img[i] == null) {
+                        champion_id = null;
+                        items_ids = [];
+                    } else {
+                        champion_id = parseInt(getId(board_img[i].getAttribute('src')));
+                        items_ids = [];
+                        for(let j=0; j<3; j++) {
+                            if(board_item_img[i*3 + j] == null) {
+                                break;
+                            }
+                            item_id = parseInt(getId(board_item_img[i*3 + j].getAttribute('src')));
+                            items_ids.push(item_id);
+                        }
+                    }
+                    board[i] = {
+                        champion_id: champion_id,
+                        items_ids: items_ids
+                    };
+                }
+                submit_board();
+                alert('Saved to database');
+            }
+
+            function drag(ev) {
+                if(!(ev.target && ev.target.className.includes("champion-block"))) {
+                    return
+                }
+                console.log("Drag!");
+                console.log(ev.target);
+                if(ev.target.className.includes("locked")) {
+                    ev.dataTransfer.setData(
+                        "index",
+                        (champion_img.indexOf(ev.target) + 100)
+                    );
+                } else {
+                    ev.dataTransfer.setData(
+                        "index",
+                        board_img.indexOf(ev.target)
+                    );
+                }
+            }
+
+            function allowDrop(ev) {
+                if(ev.target.className.includes("square-inner")) {
+                    ev.preventDefault();
+                }
+                else if(ev.target.className == "trashbin") {
+                    ev.preventDefault();
+                } else {
+                    return;
+                }
+                console.log("DragOver!");
+                return;
+            }
+
+            function drop(ev) {
+                ev.preventDefault();
+                var old_index = ev.dataTransfer.getData("index");
+                if(isNaN(parseInt(old_index))) {
+                    idrop(ev);
+                    return;
+                }
+                console.log("Drop!");
+                if(ev.target.className == "trashbin" && old_index < 100) {
+                    board_img[old_index].remove();
+                    board_img[old_index] = null;
+                    for(let i=0; i<3; i++) {
+                        if(board_item_img[old_index*3 + i] != null) {
+                            board_item_img[old_index*3 + i].remove();
+                            board_item_img[old_index*3 + i] = null;
+                        }                        
+                    }
+                    return;
+                }
+                var tmp = ev.target.className.split(" ");
+                if(tmp.length < 2) {
+                    return;
+                }
+                var new_index = parseInt(tmp[1]);
+                console.log(old_index + " --> " + new_index);
+                tmp = null;
+                if(old_index >= 100) {
+                    old_index -= 100;
+                    tmp = champion_img[old_index].cloneNode(false);
+                    tmp.className = "champion-block";
+                } else {
+                    tmp = board_img[old_index];
+                    board_img[old_index] = board_img[new_index];
+                    for(let i=0; i<3; i++) {
+                        let itmp = board_item_img[old_index*3 + i];
+                        board_item_img[old_index*3 + i] = board_item_img[new_index*3 + i];
+                        board_item_img[new_index*3 + i] = itmp;
+                    }
+                }
+                board_img[new_index] = tmp;
+                ev.target.appendChild(board_img[new_index]);
+                var item_container = document.getElementsByClassName("item-container " + new_index)[0];
+                for(let i=0; i<3; i++) {
+                    if(board_item_img[new_index*3 + i] == null) {
+                        break;
+                    }
+                    item_container.appendChild(board_item_img[new_index*3 + i]);
+                    item_container.addEventListener("mouseover", showTooltip);
+                    item_container.addEventListener("mouseout", hideTooltip);
+                    item_container.addEventListener("mousedown", hideTooltip);
+                }
+                return;
+            }
+
+            function idrag(ev) {
+                if(!(ev.target && ev.target.className.includes("item-block"))) {
+                    return
+                }
+                console.log("Drag item!");
+                console.log(ev.target);
+                if(ev.target.className.includes("locked")) {
+                    ev.dataTransfer.setData(
+                        "item-index",
+                        (item_img.indexOf(ev.target) + 1000)
+                    );
+                } else {
+                    ev.dataTransfer.setData(
+                        "item-index",
+                        board_item_img.indexOf(ev.target)
+                    );
+                }
+            }
+
+            function iallowDrop(ev) {
+                if(ev.target.className.includes("item-container")) {
+                    ev.preventDefault();
+                }
+                else if(ev.target.className == "trashbin") {
+                    ev.preventDefault();
+                } else {
+                    return;
+                }
+                console.log("DragOver item!");
+                return;
+            }
+
+            function count_item(id) {
+                id = parseInt(id)*3;
+                var cnt = 0;
+                while(board_item_img[id+cnt] != null && cnt < 3) {
+                    cnt++;
+                }
+                return cnt;
+            }            
+
+            function check_item(id, item_id) {
+                id = parseInt(id)*3;
+                var cnt = 0;
+                while(board_item_img[id+cnt] != null && cnt < 3) {
+                    tmp = getId(board_item_img[id+cnt].getAttribute('src'));
+                    if(tmp == item_id) {
+                        return true;
+                    }
+                    cnt++;
+                }
+                return false;
+            }
+
+            function idrop(ev) {
+                ev.preventDefault();
+                var old_index = ev.dataTransfer.getData("item-index");
+                if(isNaN(parseInt(old_index))) {
+                    return;
+                }
+                console.log("Drop item!");
+                if(ev.target.className == "trashbin" && old_index < 1000) {
+                    console.log(old_index);
+                    board_item_img[old_index].remove();
+                    board_item_img[old_index] = null;
+                    return;
+                }
+                var tmp = ev.target.className.split(" ");
+                if(tmp.length < 2) {
+                    return;
+                }
+                var tmp_id = tmp[1];
+                var item_count = count_item(tmp_id);
+                var item_container_id = parseInt(tmp_id);
+                if(item_count >= 3) {
+                    alert("Maximum 3 items per slot");
+                    return;
+                }
+                if(board_img[item_container_id] == null) {
+                    alert("There is no champion on that slot");
+                    return;
+                }
+                var new_index = item_container_id*3 + item_count;
+                console.log(old_index + " --> " + new_index);
+                tmp = null;
+                if(old_index >= 1000) {
+                    old_index -= 1000;
+                    tmp = item_img[old_index].cloneNode(false);
+                    tmp.className = "item-block";
+                } else {
+                    tmp = board_item_img[old_index];
+                    board_item_img[old_index] = board_item_img[new_index];
+                }
+                if(check_item(tmp_id, getId(tmp.getAttribute('src')))) {
+                    alert("There can't be a duplicated item");
+                    return;
+                }
+                board_item_img[new_index] = tmp;
+                ev.target.appendChild(board_item_img[new_index]);
+                return;
+            }
+
+            function checkTooltip(ev) {
+                var x = ev.clientX;
+                var y = ev.clientY;
+                var tooltiprect = tooltip.getBoundingClientRect();
+                var maxY = document.documentElement.clientHeight - tooltiprect.height;
+                var maxX = document.documentElement.clientWidth - tooltiprect.width;
+                // console.log("(" + y + ", " + x + "); (" + maxY + ", " + maxX + ")");
+                if(tooltiprect.bottom > maxY) {
+                    y -= tooltiprect.height;
+                }
+                if(tooltiprect.right > maxX) {
+                    x -= tooltiprect.width;
+                }
+                console.log("To: " + x + " " + y);
+                tooltip.style.top = (y + "px");
+                tooltip.style.left = (x + "px");
+            }
+
+            function showTooltip(ev) {
+                if(ev.target.className.includes("champion-block")) {
+                    let p = ev.target.parentElement;
+                    let id = getId(ev.target.getAttribute('src'));
+                    let text = "<b>" + champion_details[id].Name + "</b>";
+                    text += "<br>Skill: ";
+                    text += champion_details[id].Skill_Description;
+                    tooltip.innerHTML = text;
+                    p.appendChild(tooltip);
+                    checkTooltip(ev);
+                } else if(ev.target.className.includes("item-block")) {
+                    let p = ev.target.parentElement;
+                    let id = getId(ev.target.getAttribute('src'));
+                    let text = "<b>" + item_details[id].Name + "</b>";
+                    text += "<br>Description: ";
+                    text += item_details[id].Description;
+                    tooltip.innerHTML = text;
+                    p.appendChild(tooltip);
+                    checkTooltip(ev);
+                }
+                return;
+            }
+
+            function hideTooltip(ev) {
+                if(ev.target.className.includes("champion-block")) {
+                    let p = ev.target.parentElement;
+                    p.removeChild(tooltip);
+                } else if(ev.target.className.includes("item-block")) {
+                    let p = ev.target.parentElement;
+                    p.removeChild(tooltip);
+                }
+                return;
+            }
+
+            function init() {
+                var board_grid = document.getElementById("div-board-grid");
+                var champion_grid = document.getElementById("div-champion-grid");
+                var item_grid = document.getElementById("div-item-grid");
+                for(let i=0; i<28; i++) {
+                    let outer_square = document.createElement("div");
+                    let inner_square = document.createElement("div");
+                    let item_container = document.createElement("div");
+                    let img = document.createElement("img");
+                    outer_square.className = "square-outer";
+                    inner_square.className = ("square-inner" + " " + i);
+                    item_container.className = ("item-container" + " " + i);
+                    item_container.addEventListener("drop", idrop);
+                    item_container.addEventListener("dragover", iallowDrop);
+                    item_container.addEventListener("dragstart", idrag);
+                    item_container.addEventListener("mouseover", showTooltip);
+                    item_container.addEventListener("mouseout", hideTooltip);
+                    item_container.addEventListener("mousedown", hideTooltip);
+                    inner_square.addEventListener("drop", drop);
+                    inner_square.addEventListener("dragover", allowDrop);
+                    inner_square.addEventListener("dragstart", drag);
+                    inner_square.addEventListener("mouseover", showTooltip);
+                    inner_square.addEventListener("mouseout", hideTooltip);
+                    inner_square.addEventListener("mousedown", hideTooltip);
+                    if(board[i].champion_id != null) {
+                        let img_src = "/static/image/champion/" + board[i].champion_id + ".png";
+                        img.className = "champion-block";
+                        img.setAttribute("draggable", "true");
+                        img.setAttribute("src", img_src);
+                        board_img[i] = img;
+                        inner_square.appendChild(img);
+                        for(let j=0; j<board[i].items_ids.length; j++) {
+                            let item_img = document.createElement("img");
+                            let item_img_src = "/static/image/item/" + board[i].items_ids[j] + ".png";
+                            item_img.className = "item-block";
+                            item_img.setAttribute("draggable", "true");
+                            item_img.setAttribute("src", item_img_src);
+                            board_item_img[i*3+j] = item_img;
+                            item_container.appendChild(item_img);
+                        }
+                    }
+                    outer_square.appendChild(inner_square);
+                    outer_square.appendChild(item_container);
+                    board_grid.appendChild(outer_square);
+                }
+                for(let i=0; i<57; i++) {
+                    let outer_square = document.createElement("div");
+                    let inner_square = document.createElement("div");
+                    let img = document.createElement("img");
+                    outer_square.className = "square-outer";
+                    inner_square.className = ("square-inner" + " " + i);
+                    inner_square.addEventListener("dragstart", drag);
+                    inner_square.addEventListener("mouseover", showTooltip);
+                    inner_square.addEventListener("mouseout", hideTooltip);
+                    inner_square.addEventListener("mousedown", hideTooltip);
+                    let img_src = "/static/image/champion/" + i + ".png";
+                    img.className = "champion-block locked";
+                    img.setAttribute("draggable", "true");
+                    img.setAttribute("src", img_src);
+                    champion_img[i] = img;
+                    inner_square.appendChild(img);
+                    outer_square.appendChild(inner_square);
+                    champion_grid.appendChild(outer_square);
+                }
+                for(let i=0; i<108; i++) {
+                    let item_square = document.createElement("div");
+                    let img = document.createElement("img");
+                    item_square.className = ("square-item" + " " + i);
+                    item_square.addEventListener("dragstart", idrag);
+                    item_square.addEventListener("mouseover", showTooltip);
+                    item_square.addEventListener("mouseout", hideTooltip);
+                    item_square.addEventListener("mousedown", hideTooltip);
+                    let img_src = "/static/image/item/" + i + ".png";
+                    img.className = "item-block locked";
+                    img.setAttribute("draggable", "true");
+                    img.setAttribute("src", img_src);
+                    item_img[i] = img;
+                    item_square.appendChild(img);
+                    item_grid.appendChild(item_square);
+                }
+            }
+
+            init();
+        </script>
+    </body>
+</html>
